@@ -1,6 +1,6 @@
 # Auto TWRP Builder
 
-A one-click automated TWRP compiler for Android devices 🔧
+A one-click automated TWRP compiler for Android devices. 🔧
 
 [<img src="https://github.com/user-attachments/assets/0a4bb969-dec8-42f2-afd8-0858283ac3fe">](https://discord.gg/3zbfaTNN7V)
 
