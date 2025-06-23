@@ -1,11 +1,39 @@
-https://github.com/ColdWindScholar/Auto-Twrp-Builder
+# Auto TWRP Builder
 
-# <div align="center">在Github上只需上传你的recovery即可一键编译出适合你手机的TWRP！</div>
+A one-click TWRP compiler for your device—just upload your recovery on GitHub and let the automation do the rest! 🔧
 
-## 用法:
-###  1、Fork本仓库
-### 2、使用bootimg等解包工具解包你的recovery，在default.prop或prop.default底下添加ro.product.first_api_level=(你的安卓sdk版本)，打包
-### 3、上传打包好的recovery.img到本项目底下，并复制该文件直链
-### 4、点击Action，填入直链及twrp版本信息
-### 5、点击Run即可！
-### 6、编译完成后可在Release下载编译好的Recovery
+[<img src="https://github.com/user-attachments/assets/placeholder-banner">](https://github.com/ColdWindScholar/Auto-Twrp-Builder)
+
+## 📥 How to Use
+
+Follow these steps to generate your own TWRP build:
+
+- **Step 1**: Fork this repository to your GitHub account.
+- **Step 2**: Use a tool like `bootimg` to unpack your `recovery.img`.  
+  Edit `default.prop` or `prop.default` by appending this line at the bottom:  
+  `ro.product.first_api_level=(your Android SDK version)`  
+  Then repack the recovery.
+- **Step 3**: Upload the repacked `recovery.img` to your forked repo and copy its direct link.
+- **Step 4**: Go to the **Actions** tab in your repo, and start a new workflow run.  
+  Paste the direct link and specify the desired TWRP version.
+- **Step 5**: Hit **Run workflow** and let the system build your TWRP image.
+- **Step 6**: After the build finishes, download the compiled TWRP recovery from the **Releases** section.
+
+![Example Workflow Screenshot](https://github.com/user-attachments/assets/placeholder-screenshot)
+
+## 🧪 Built For
+
+This tool is designed for Android modders and device maintainers who want a simplified and automated way to generate recovery builds. Whether you're personalizing your device or contributing to the community, this project gives you a head start.
+
+## 🤝 Contribute & Collaborate
+
+Have feedback or ideas?  
+Head over to the [Issues](https://github.com/ColdWindScholar/Auto-Twrp-Builder/issues) or open a PR to improve the tool.
+
+**⭐ If this tool was of any use to you, please consider giving it a Star - it would make my day! ⭐**
+
+[<img src="https://img.shields.io/badge/GitHub-Actions-blue?style=for-the-badge&logo=github-actions&logoColor=white">](https://github.com/ColdWindScholar/Auto-Twrp-Builder/actions)
+
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=100&section=footer" />
+</div>
