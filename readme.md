@@ -19,20 +19,17 @@ Follow these steps to generate your own TWRP build:
 - **Step 5**: Hit **Run workflow** and let the system build your TWRP image.
 - **Step 6**: After the build finishes, download the compiled TWRP recovery from the **Releases** section.
 
-![Example Workflow Screenshot](https://github.com/user-attachments/assets/placeholder-screenshot)
-
 ## 🧪 Built For
 
-This tool is designed for Android modders and device maintainers who want a simplified and automated way to generate recovery builds. Whether you're personalizing your device or contributing to the community, this project gives you a head start.
+This tool is designed for Android modders and device maintainers who want a simplified and automated way to generate recovery builds. Whether you're personalizing your device or contributing to the community, this tool should give you a head start.
 
 ## 🤝 Contribute & Collaborate
 
-Have feedback or ideas?  
-Head over to the [Issues](https://github.com/ColdWindScholar/Auto-Twrp-Builder/issues) or open a PR to improve the tool.
+Have feedback or ideas?  Head over to the [Issues section](https://github.com/NoahDomingues/Auto-TWRP-Builder/issues) or open a [pull request](https://github.com/NoahDomingues/Auto-TWRP-Builder/pulls) to improve the tool.
 
 **⭐ If this tool was of any use to you, please consider giving it a Star - it would make my day! ⭐**
 
-[<img src="https://img.shields.io/badge/GitHub-Actions-blue?style=for-the-badge&logo=github-actions&logoColor=white">](https://github.com/ColdWindScholar/Auto-Twrp-Builder/actions)
+[<img src="https://img.shields.io/badge/GitHub-Actions-blue?style=for-the-badge&logo=github-actions&logoColor=white">](https://github.com/NoahDomingues/Auto-TWRP-Builder/actions)
 
 <div align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=100&section=footer" />
