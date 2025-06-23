@@ -2,7 +2,7 @@
 
 A one-click TWRP compiler for your device—just upload your recovery on GitHub and let the automation do the rest! 🔧
 
-[<img src="https://github.com/user-attachments/assets/placeholder-banner">](https://github.com/ColdWindScholar/Auto-Twrp-Builder)
+[<img src="https://github.com/user-attachments/assets/0a4bb969-dec8-42f2-afd8-0858283ac3fe">](https://github.com/NoahDomingues/Auto-TWRP-Builder)
 
 ## 📥 How to Use
 
