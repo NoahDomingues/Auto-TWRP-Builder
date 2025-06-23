@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto TWRP Builder by Noah Domingues</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #121212;
+      color: #E0E0E0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2, h3, h4 {
+      color: #FFFFFF;
+      margin-top: 1.2em;
+      margin-bottom: 0.5em;
+      line-height: 1.2;
+    }
+    p { margin-bottom: 1.2em; }
+    a {
+      color: #BB86FC;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    a:hover { text-decoration: underline; color: #D0A9F5; }
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1rem 0;
+    }
+    code {
+      background-color: #333;
+      color: #FFC107;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    pre {
+      background-color: #333;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin-bottom: 1.2em;
+    }
+    ul {
+      list-style: disc;
+      padding-left: 1.5rem;
+      margin-bottom: 1em;
+    }
+    li { margin-bottom: 0.5em; }
+    .footer {
+      margin-top: 3rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Auto TWRP Builder</h1>
+    <p>A one-click automated TWRP compiler for Android devices 🔧</p>
+    
+    <p>
+      <a href="https://discord.gg/3zbfaTNN7V">
+        <img src="https://github.com/user-attachments/assets/0a4bb969-dec8-42f2-afd8-0858283ac3fe" alt="TWRP Logo">
+      </a>
+    </p>
+
+    <h2>💡 Usage</h2>
+    <ul>
+      <li><strong>Step 1</strong>: Fork this repository to your GitHub account.</li>
+      <li><strong>Step 2</strong>: Use a tool like <code>bootimg</code> to unpack your <code>recovery.img</code>. Edit <code>default.prop</code> or <code>prop.default</code> by appending this line at the bottom:<br><code>ro.product.first_api_level=(your Android SDK version)</code><br>Then repack the recovery.</li>
+      <li><strong>Step 3</strong>: Upload the repacked <code>recovery.img</code> to your forked repo and copy its direct link.</li>
+      <li><strong>Step 4</strong>: Go to the <strong>Actions</strong> tab in your repo and start a new workflow run. Paste the direct link and specify the desired TWRP version.</li>
+      <li><strong>Step 5</strong>: Hit <strong>Run workflow</strong> and let the system build your TWRP image.</li>
+      <li><strong>Step 6</strong>: After the build finishes, download the compiled TWRP recovery from the <strong>Releases</strong> section.</li>
+    </ul>
+
+    <h2>🧪 Built For</h2>
+    <p>This tool is designed for Android modders and device maintainers who want a simplified and automated way to generate recovery builds. Whether you're personalizing your device or contributing to the community, this tool should give you a head start.</p>
+
+    <h2>⚡ Contribute</h2>
+    <p>Have feedback or ideas? Head over to the <strong><a href="https://github.com/NoahDomingues/Auto-TWRP-Builder/issues">Issues section</a></strong> or open a <strong><a href="https://github.com/NoahDomingues/Auto-TWRP-Builder/pulls">pull request</a></strong> to improve the tool.</p>
+
+    <h2>🤝 Support</h2>
+    <p>If you run into any issues, check out our <strong><a href="https://discord.gg/3zbfaTNN7V">Discord server</a></strong> or open a GitHub issue to let us know!</p>
+    
+    <p>
+      <a href="https://discord.gg/3zbfaTNN7V">
+        <img src="https://github.com/user-attachments/assets/f61046f5-1dc5-4b0c-87f8-4a94d6cbac96" alt="Auto TWRP Preview">
+      </a>
+    </p>
+
+    <p><strong>⭐ If this tool was of any use to you, please consider giving it a Star - it would make my day! ⭐</strong></p>
+
+    <p>Thanks to <a href="https://github.com/ColdWindScholar"><strong>ColdWindScholar</strong></a> for building the <a href="https://github.com/ColdWindScholar/Auto-Twrp-Builder">initial project</a> from which this was forked.</p>
+
+    <p>
+      <a href="https://github.com/NoahDomingues/Auto-TWRP-Builder/actions">
+        <img src="https://img.shields.io/badge/GitHub-Actions-blue?style=for-the-badge&logo=github-actions&logoColor=white" alt="GitHub Actions Badge">
+      </a>
+      <a href="https://discord.gg/3zbfaTNN7V">
+        <img src="https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white" alt="Discord Badge">
+      </a>
+    </p>
+  </div>
+
+  <div class="footer">
+    <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=100&section=footer" alt="Footer Decoration">
+  </div>
+</body>
+</html>
