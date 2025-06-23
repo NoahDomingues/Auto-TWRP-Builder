@@ -1,6 +1,6 @@
 # Auto TWRP Builder
 
-A one-click TWRP compiler for your device—just upload your recovery on GitHub and let the automation do the rest! 🔧
+A one-click automated TWRP compiler for Android devices 🔧
 
 [<img src="https://github.com/user-attachments/assets/0a4bb969-dec8-42f2-afd8-0858283ac3fe">](https://github.com/NoahDomingues/Auto-TWRP-Builder)
 
