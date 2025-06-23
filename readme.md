@@ -4,7 +4,7 @@ A one-click automated TWRP compiler for Android devices 🔧
 
 [<img src="https://github.com/user-attachments/assets/0a4bb969-dec8-42f2-afd8-0858283ac3fe">](https://github.com/NoahDomingues/Auto-TWRP-Builder)
 
-## 📥 How to Use
+## 💡 Usage
 
 Follow these steps to generate your own TWRP build:
 
@@ -23,7 +23,7 @@ Follow these steps to generate your own TWRP build:
 
 This tool is designed for Android modders and device maintainers who want a simplified and automated way to generate recovery builds. Whether you're personalizing your device or contributing to the community, this tool should give you a head start.
 
-## 🤝 Contribute & Collaborate
+## 🤝 Contribute
 
 Have feedback or ideas?  Head over to the [Issues section](https://github.com/NoahDomingues/Auto-TWRP-Builder/issues) or open a [pull request](https://github.com/NoahDomingues/Auto-TWRP-Builder/pulls) to improve the tool.
 
