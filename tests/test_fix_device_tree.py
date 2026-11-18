@@ -85,6 +85,16 @@ class DeviceTreeFixTests(unittest.TestCase):
             self.assertIn("BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE := 6505365504", board)
             self.assertIn("TARGET_USES_64_BIT_BINDER := false", board)
             self.assertNotIn("TARGET_KERNEL_SOURCE", board)
+            self.assertIn("TW_INCLUDE_CRYPTO := true", board)
+            self.assertIn("TW_INCLUDE_CRYPTO_FBE := true", board)
+            self.assertIn("TW_INCLUDE_FBE_METADATA_DECRYPT := true", board)
+            self.assertIn("BOARD_USES_METADATA_PARTITION := true", board)
+            self.assertNotIn("BOARD_BOOTIMAGE_PARTITION_SIZE", board)
+            self.assertLess(
+                board.index("TARGET_FORCE_PREBUILT_KERNEL := true"),
+                board.index("ifeq ($(TARGET_FORCE_PREBUILT_KERNEL),true)"),
+            )
+            self.assertIn("BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img", board)
             self.assertIn("PRODUCT_MANUFACTURER := TCL", product)
             self.assertIn("PRODUCT_BRAND := Alcatel", product)
             self.assertIn("/dev/block/mmcblk0p16 /metadata", fstab)
