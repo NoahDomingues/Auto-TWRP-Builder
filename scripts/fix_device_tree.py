@@ -77,6 +77,15 @@ def replace_device_path_references(device_dir: Path) -> None:
             path.write_text(updated, encoding="utf-8")
 
 
+def place_make_vars_before(content: str, anchor: str, values: dict[str, str]) -> str:
+    content = remove_make_vars(content, set(values))
+    position = content.find(anchor)
+    if position < 0:
+        raise RuntimeError(f"Could not find BoardConfig anchor: {anchor}")
+    block = "\\n".join(f"{name} := {value}" for name, value in values.items())
+    return content[:position] + block + "\\n\\n" + content[position:]
+
+
 def patch_board_config(board_path: Path) -> None:
     text = board_path.read_text(encoding="utf-8")
     text = remove_make_vars(
@@ -90,6 +99,7 @@ def patch_board_config(board_path: Path) -> None:
             "TARGET_2ND_CPU_VARIANT_RUNTIME",
             "TARGET_KERNEL_SOURCE",
             "TARGET_KERNEL_CONFIG",
+            "BOARD_BOOTIMAGE_PARTITION_SIZE",
         },
     )
 
@@ -111,8 +121,13 @@ def patch_board_config(board_path: Path) -> None:
         "BOARD_BOOTIMG_HEADER_VERSION": "2",
         "BOARD_KERNEL_PAGESIZE": "2048",
         "BOARD_RECOVERYIMAGE_PARTITION_SIZE": str(RECOVERY_PARTITION_SIZE),
-        "BOARD_BOOTIMAGE_PARTITION_SIZE": str(RECOVERY_PARTITION_SIZE),
         "BOARD_SUPER_PARTITION_SIZE": str(SUPER_PARTITION_SIZE),
+        "VENDOR_SECURITY_PATCH": "2099-12-31",
+        "TW_INCLUDE_CRYPTO": "true",
+        "TW_INCLUDE_CRYPTO_FBE": "true",
+        "TW_INCLUDE_FBE": "true",
+        "TW_INCLUDE_FBE_METADATA_DECRYPT": "true",
+        "BOARD_USES_METADATA_PARTITION": "true",
         "BOARD_SUPER_PARTITION_GROUPS": "alps_dynamic_partitions",
         "BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE": str(DYNAMIC_PARTITION_GROUP_SIZE),
         "BOARD_ALPS_DYNAMIC_PARTITIONS_PARTITION_LIST": DYNAMIC_PARTITIONS,
@@ -120,9 +135,27 @@ def patch_board_config(board_path: Path) -> None:
         "TARGET_USERIMAGES_USE_EXT4": "true",
         "TARGET_USERIMAGES_USE_F2FS": "true",
         "TARGET_RECOVERY_FSTAB": "$(DEVICE_PATH)/recovery.fstab",
+        "VENDOR_SECURITY_PATCH": "2099-12-31",
+        "TW_INCLUDE_CRYPTO": "true",
+        "TW_INCLUDE_CRYPTO_FBE": "true",
+        "TW_INCLUDE_FBE": "true",
+        "TW_INCLUDE_FBE_METADATA_DECRYPT": "true",
+        "BOARD_USES_METADATA_PARTITION": "true",
     }
     for name, value in values.items():
         text = set_make_var(text, name, value)
+
+    prebuilt_vars = {
+        "DEVICE_PATH": DEVICE_PATH,
+        "TARGET_FORCE_PREBUILT_KERNEL": "true",
+        "TARGET_PREBUILT_KERNEL": "$(DEVICE_PATH)/prebuilt/kernel",
+        "TARGET_PREBUILT_DTB": "$(DEVICE_PATH)/prebuilt/dtb.img",
+    }
+    text = place_make_vars_before(
+        text,
+        "ifeq ($(TARGET_FORCE_PREBUILT_KERNEL),true)",
+        prebuilt_vars,
+    )
 
     dtb_arg = "BOARD_MKBOOTIMG_ARGS += --dtb $(TARGET_PREBUILT_DTB)"
     if dtb_arg not in text:
@@ -231,6 +264,7 @@ def write_report(device_dir: Path) -> None:
         "Metadata block device: /dev/block/mmcblk0p16",
         "Stock fingerprint: " + STOCK_FINGERPRINT,
         "",
+        "TWRP FBE crypto support is enabled; successful decryption still depends on the device-specific fstab and MediaTek keymaster components.",
         "The TWRP build compatibility values PLATFORM_VERSION=16.1.0 and security patch 2099-12-31 are preserved.",
         "No recovery image was built or flashed by this script.",
     ]
@@ -281,6 +315,17 @@ def fix_tree(root: Path) -> Path:
     for name, value in required.items():
         if not re.search(rf"^\s*{name}\s*:=\s*{re.escape(value)}\s*$", final_text, re.MULTILINE):
             raise RuntimeError(f"Validation failed: {name} != {value}")
+
+    force_pos = final_text.find("TARGET_FORCE_PREBUILT_KERNEL := true")
+    conditional_pos = final_text.find("ifeq ($(TARGET_FORCE_PREBUILT_KERNEL),true)")
+    if force_pos < 0 or conditional_pos < 0 or force_pos > conditional_pos:
+        raise RuntimeError("TARGET_FORCE_PREBUILT_KERNEL must be set before its conditional block")
+
+    if "BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img" not in final_text:
+        raise RuntimeError("Prebuilt DTBO image path is missing or was not enabled")
+
+    if "BOARD_BOOTIMAGE_PARTITION_SIZE" in final_text:
+        raise RuntimeError("Unverified boot partition size must not be hardcoded")
 
     product_text = product_file.read_text(encoding="utf-8")
     product_required = {
