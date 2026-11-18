@@ -82,8 +82,8 @@ def place_make_vars_before(content: str, anchor: str, values: dict[str, str]) ->
     position = content.find(anchor)
     if position < 0:
         raise RuntimeError(f"Could not find BoardConfig anchor: {anchor}")
-    block = "\\n".join(f"{name} := {value}" for name, value in values.items())
-    return content[:position] + block + "\\n\\n" + content[position:]
+    block = "\n".join(f"{name} := {value}" for name, value in values.items())
+    return content[:position] + block + "\n\n" + content[position:]
 
 
 def patch_board_config(board_path: Path) -> None:
@@ -135,12 +135,6 @@ def patch_board_config(board_path: Path) -> None:
         "TARGET_USERIMAGES_USE_EXT4": "true",
         "TARGET_USERIMAGES_USE_F2FS": "true",
         "TARGET_RECOVERY_FSTAB": "$(DEVICE_PATH)/recovery.fstab",
-        "VENDOR_SECURITY_PATCH": "2099-12-31",
-        "TW_INCLUDE_CRYPTO": "true",
-        "TW_INCLUDE_CRYPTO_FBE": "true",
-        "TW_INCLUDE_FBE": "true",
-        "TW_INCLUDE_FBE_METADATA_DECRYPT": "true",
-        "BOARD_USES_METADATA_PARTITION": "true",
     }
     for name, value in values.items():
         text = set_make_var(text, name, value)
@@ -305,8 +299,13 @@ def fix_tree(root: Path) -> Path:
         "BOARD_BOOTIMG_HEADER_VERSION": "2",
         "BOARD_KERNEL_PAGESIZE": "2048",
         "BOARD_RECOVERYIMAGE_PARTITION_SIZE": str(RECOVERY_PARTITION_SIZE),
-        "BOARD_BOOTIMAGE_PARTITION_SIZE": str(RECOVERY_PARTITION_SIZE),
         "BOARD_SUPER_PARTITION_SIZE": str(SUPER_PARTITION_SIZE),
+        "VENDOR_SECURITY_PATCH": "2099-12-31",
+        "TW_INCLUDE_CRYPTO": "true",
+        "TW_INCLUDE_CRYPTO_FBE": "true",
+        "TW_INCLUDE_FBE": "true",
+        "TW_INCLUDE_FBE_METADATA_DECRYPT": "true",
+        "BOARD_USES_METADATA_PARTITION": "true",
         "BOARD_SUPER_PARTITION_GROUPS": "alps_dynamic_partitions",
         "BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE": str(DYNAMIC_PARTITION_GROUP_SIZE),
         "BOARD_ALPS_DYNAMIC_PARTITIONS_PARTITION_LIST": DYNAMIC_PARTITIONS,
