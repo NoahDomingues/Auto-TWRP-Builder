@@ -255,12 +255,28 @@ def fix_tree(root: Path) -> Path:
 
     final_text = board.read_text(encoding="utf-8")
     required = {
+        "DEVICE_PATH": DEVICE_PATH,
+        "TARGET_BOARD_PLATFORM": "mt6761",
         "TARGET_ARCH": "arm",
         "TARGET_ARCH_VARIANT": "armv7-a-neon",
         "TARGET_CPU_ABI": "armeabi-v7a",
-        "TARGET_BOARD_PLATFORM": "mt6761",
+        "TARGET_CPU_ABI2": "armeabi",
+        "TARGET_CPU_VARIANT": "cortex-a53",
+        "TARGET_CPU_VARIANT_RUNTIME": "cortex-a53",
+        "TARGET_USES_64_BIT_BINDER": "false",
+        "TARGET_FORCE_PREBUILT_KERNEL": "true",
+        "TARGET_PREBUILT_KERNEL": "$(DEVICE_PATH)/prebuilt/kernel",
+        "TARGET_PREBUILT_DTB": "$(DEVICE_PATH)/prebuilt/dtb.img",
+        "BOARD_KERNEL_IMAGE_NAME": "zImage",
+        "BOARD_BOOTIMG_HEADER_VERSION": "2",
+        "BOARD_KERNEL_PAGESIZE": "2048",
+        "BOARD_RECOVERYIMAGE_PARTITION_SIZE": str(RECOVERY_PARTITION_SIZE),
+        "BOARD_BOOTIMAGE_PARTITION_SIZE": str(RECOVERY_PARTITION_SIZE),
         "BOARD_SUPER_PARTITION_SIZE": str(SUPER_PARTITION_SIZE),
+        "BOARD_SUPER_PARTITION_GROUPS": "alps_dynamic_partitions",
         "BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE": str(DYNAMIC_PARTITION_GROUP_SIZE),
+        "BOARD_ALPS_DYNAMIC_PARTITIONS_PARTITION_LIST": DYNAMIC_PARTITIONS,
+        "TARGET_RECOVERY_FSTAB": "$(DEVICE_PATH)/recovery.fstab",
     }
     for name, value in required.items():
         if not re.search(rf"^\s*{name}\s*:=\s*{re.escape(value)}\s*$", final_text, re.MULTILINE):
