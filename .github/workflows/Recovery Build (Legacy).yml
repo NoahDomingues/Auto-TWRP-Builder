@@ -1,20 +1,23 @@
-name: Recovery Build (Legacy)
+name: Recovery Build (Preflight)
 
 on:
   workflow_dispatch:
     inputs:
       IMG_URL:
-        description: 'IMG_ URL'
+        description: 'Verified stock recovery image URL'
         required: true
-        default: 'https://github.com/KoCleo/Auto-Twrp-Builder/raw/master/recovery.img'
+        default: 'https://github.com/FeaturedPr0ject/GernelOStest/releases/download/Recovery/recovery-original.img'
+      IMG_SHA256:
+        description: 'Expected SHA-256 of the input recovery image'
+        required: true
+        default: 'fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07'
       MANIFEST_URL:
         description: 'MANIFEST_URL (if want to use SSH keys, use git@github.com:XXXXX)'
         required: true
         default: 'https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni'
       MANIFEST_BRANCH:
-        description: 'MANIFEST_BRANCH'
+        description: 'Manifest branch (do not use the old twrp-8.1 default without compatibility review)'
         required: true
-        default: 'twrp-8.1'
       BUILD_TARGET:
         description: 'BUILD_TARGET'
         required: true
@@ -93,10 +96,18 @@ jobs:
       run: |
         repo sync -j$(nproc --all) --force-sync
       working-directory: workspace
+    - name: Download and verify stock recovery
+      run: |
+        set -euo pipefail
+        curl -fL --retry 3 --retry-delay 2 '${{ github.event.inputs.IMG_URL }}' -o recovery-original.img
+        echo '${{ github.event.inputs.IMG_SHA256 }}  recovery-original.img' | sha256sum -c -
+        test "$(stat -c%s recovery-original.img)" -eq 33554432
+      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
+
     - name: Generate Device Tree
       run: |
-        wget ${{ github.event.inputs.IMG_URL }}
-        python3 ${GITHUB_WORKSPACE}/scripts/build.py -i *.img -o device
+        set -euo pipefail
+        python3 ${GITHUB_WORKSPACE}/scripts/build.py -i recovery-original.img -o device
       working-directory: ${{ steps.pwd.outputs.workspace-folder }}
       id: gdt
 
