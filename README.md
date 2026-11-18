@@ -1,33 +1,51 @@
-# Alcatel 9032X TWRP bring-up
+# Alcatel 9032X / Apollo_8_4G TWRP bring-up
 
-Target device: Alcatel 9032X / Apollo_8_4G
+Target device: Alcatel 9032X, device codename Apollo_8_4G, internal build codename `apollo2`.
 
-Known device facts:
+## Verified device profile
+
 - SoC: MediaTek MT6761
-- Android: 10 / SDK 29
-- First API level: 29
-- Userspace architecture: ARM32 (armeabi-v7a)
-- Recovery partition size: 33,554,432 bytes (32 MiB)
-- Input image: stock `recovery-original.img` from the GitHub Release tagged `Recovery`
+- Stock Android: Android 10 / SDK 29 / first API level 29
+- Kernel and userspace: 32-bit ARM (ARMv7-A with NEON, `armeabi-v7a`)
+- CPU runtime variant: Cortex-A53
+- Boot image header: v2
+- Kernel page size: 2048 bytes
+- Stock recovery image: 33,554,432 bytes
+- Recovery partition: 33,554,432 bytes
+- Userdata filesystem: F2FS
+- Super partition: 6,509,559,808 bytes
+- Metadata mount source observed on the running tablet: `/dev/block/mmcblk0p16`
+- Stock fingerprint: `Alcatel/9032X/Apollo_8_4G:10/QP1A.190711.020/1E24:user/release-keys`
 
-## Current status
+The stock recovery image is stored in the GitHub Release tagged `Recovery`. The workflow checks both its SHA-256 and exact size before extraction.
 
-This repository currently performs a **device-tree preflight only**. It does not compile or flash TWRP.
+## What the workflow fixes
 
-The workflow downloads the stock recovery image, verifies its SHA-256 and exact size, runs `twrpdtgen`, and uploads the generated device tree as a GitHub Actions artifact.
+The workflow first generates a device tree from the stock recovery image, then runs `scripts/fix_device_tree.py` to apply and validate device-specific corrections:
 
-## Run the preflight
+- Renames the generated manufacturer folder from `alps` to `tcl`, matching the device's reported manufacturer while retaining the confirmed internal codename `apollo2`.
+- Sets the build target to ARM32 and MT6761, and removes generated secondary-architecture and kernel-source references that do not match this prebuilt-kernel tree.
+- Keeps the stock kernel, DTB, and DTBO prebuilt files and checks their expected sizes before uploading the result.
+- Sets the recovery and boot image partition size to 32 MiB.
+- Sets the physical super partition size to 6,509,559,808 bytes. The dynamic partition group is limited to 6,505,365,504 bytes, reserving 4 MiB for metadata and alignment.
+- Sets the dynamic partition list to `system vendor product odm oem` and enables dynamic partitions in `device.mk`.
+- Uses the observed metadata block device `/dev/block/mmcblk0p16` in the recovery fstab.
+- Sets the product identity to Alcatel / TCL / 9032X while keeping the internal product codename.
+- Removes the import of the optional `init.recovery.smartlog.rc` only when that file is absent from the extracted recovery tree.
 
-1. Open the Actions tab.
-2. Select **TWRP Device Tree Preflight**.
+The generated TWRP compatibility values `PLATFORM_VERSION := 16.1.0` and security patch `2099-12-31` are intentionally preserved. They are commonly used by TWRP device trees as build/rollback compatibility settings and are not the stock Android version or the stock security patch.
+
+## Run the corrected preflight
+
+1. Open the repository's **Actions** tab.
+2. Select **TWRP Device Tree Fix and Preflight**.
 3. Choose **Run workflow** on branch `master`.
 4. Keep the default image URL and SHA-256.
 5. Start the workflow.
-6. When it finishes, download the artifact named `alcatel-9032x-device-tree-preflight`.
+6. Download the artifact named `alcatel-9032x-device-tree-fixed`.
 
-## Important safety notes
+## Current safety boundary
 
-- Do not flash a recovery built for another device.
-- Do not assume an MT6761 donor tree is compatible; some MT6761 devices use ARM64 while this tablet uses ARM32.
-- Do not start a full TWRP compile until the generated tree, kernel architecture, fstab, partition layout, encryption support, and recovery init configuration have been reviewed.
-- No workflow in this repository flashes the tablet.
+This repository currently generates and validates the corrected device tree only. It does **not** compile a TWRP image and does **not** flash the tablet.
+
+A successful preflight is not proof that a recovery will boot. Encryption/decryption, touchscreen mapping, display behavior, USB/MTP, mounting/formatting, and reboot behavior still require a controlled build-and-test cycle with verified recovery and boot backups. Do not flash a test image until those checks and the exact TWRP build branch have been completed.
