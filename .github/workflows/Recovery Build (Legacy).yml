@@ -39,6 +39,7 @@ jobs:
       - name: Test device tree correction script
         run: |
           set -euo pipefail
+          python -m py_compile scripts/build.py scripts/fix_device_tree.py tests/test_fix_device_tree.py
           python -m unittest discover -s tests -v
 
       - name: Download and verify stock recovery
