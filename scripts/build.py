@@ -1,25 +1,27 @@
-from twrpdtgen.device_tree import DeviceTree
 import argparse
-import os
 from pathlib import Path
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Auto-Twrp-Builder")
-    parser.add_argument('-i', '--input', type=str, default='', help='Recovery/Boot Image')
-    parser.add_argument('-o', '--output', type=str, default='', help='Output path')
+from twrpdtgen.device_tree import DeviceTree
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate a TWRP device tree from a stock recovery image")
+    parser.add_argument("-i", "--input", type=Path, required=True, help="Verified stock recovery image")
+    parser.add_argument("-o", "--output", type=Path, required=True, help="Output directory")
     args = parser.parse_args()
-    if not args.input or not args.output:
-        parser.print_help()
-        exit()
-    if not os.path.exists(args.output):
-        os.makedirs(args.output, exist_ok=True)
-    device_tree = DeviceTree(Path(args.input))
-    if os.getenv('GITHUB_OUTPUT', ''):
-        with open(os.getenv('GITHUB_OUTPUT', ''), 'w') as f:
-            f.write(f'DEVICE_NAME={device_tree.device_info.manufacturer}\n')
-            f.write(f'MAKEFILE_NAME=omni_{device_tree.device_info.codename}\n')
-            f.write(
-                f'DEVICE_PATH={os.path.basename(args.output) + os.sep + device_tree.device_info.manufacturer + os.sep + device_tree.device_info.codename}')
-    device_tree.dump_to_folder(Path(args.output))
-    with open(os.path.basename(args.output) + os.sep + device_tree.device_info.manufacturer + os.sep + device_tree.device_info.codename+os.sep+'Android.bp', 'r') as f:
-        print(f.read())
+
+    if not args.input.is_file():
+        parser.error(f"Input image does not exist: {args.input}")
+
+    args.output.mkdir(parents=True, exist_ok=True)
+    device_tree = DeviceTree(args.input)
+    device_tree.dump_to_folder(args.output)
+
+    makefiles = sorted(args.output.rglob("Android.bp"))
+    if len(makefiles) != 1:
+        raise RuntimeError(f"Expected exactly one generated Android.bp, found {len(makefiles)}")
+    print(makefiles[0].read_text(encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    main()
