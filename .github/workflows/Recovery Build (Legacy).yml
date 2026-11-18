@@ -1,23 +1,24 @@
-name: TWRP Device Tree Preflight
+name: TWRP Device Tree Fix and Preflight
 
 on:
   workflow_dispatch:
     inputs:
       IMG_URL:
-        description: 'Verified stock recovery image URL'
+        description: "Verified stock recovery image URL"
         required: true
-        default: 'https://github.com/FeaturedPr0ject/GernelOStest/releases/download/Recovery/recovery-original.img'
+        default: "https://github.com/FeaturedPr0ject/GernelOStest/releases/download/Recovery/recovery-original.img"
       IMG_SHA256:
-        description: 'Expected SHA-256'
+        description: "Expected SHA-256"
         required: true
-        default: 'fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07'
+        default: "fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07"
 
 permissions:
   contents: read
 
 jobs:
-  generate-device-tree:
+  fix-device-tree:
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -25,10 +26,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      - name: Install device tree generator
+      - name: Install recovery image tools
         run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y cpio
           python -m pip install --upgrade pip
           python -m pip install twrpdtgen
 
@@ -42,17 +46,25 @@ jobs:
           echo "$IMG_SHA256  recovery-original.img" | sha256sum --check
           test "$(stat --format=%s recovery-original.img)" -eq 33554432
 
-      - name: Generate device tree
+      - name: Generate device tree from stock recovery
         run: |
           set -euo pipefail
           python scripts/build.py --input recovery-original.img --output generated-device-tree
           find generated-device-tree -maxdepth 5 -type f -print | sort
-          grep -RniE 'TARGET_ARCH|TARGET_2ND_ARCH|BOARD_KERNEL|AB_OTA|super|dynamic|fstab|arm64|arm32' generated-device-tree || true
 
-      - name: Upload generated device tree for review
+      - name: Correct and validate device tree
+        run: |
+          set -euo pipefail
+          python scripts/fix_device_tree.py --root generated-device-tree
+          test -f generated-device-tree/tcl/apollo2/DEVICE_TREE_FIX_REPORT.txt
+          grep -nE 'TARGET_ARCH := arm$|TARGET_BOARD_PLATFORM := mt6761$|BOARD_SUPER_PARTITION_SIZE := 6509559808$|BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE := 6505365504$' generated-device-tree/tcl/apollo2/BoardConfig.mk
+          grep -n '/dev/block/mmcblk0p16 /metadata' generated-device-tree/tcl/apollo2/recovery.fstab
+          find generated-device-tree/tcl/apollo2 -maxdepth 5 -type f -print | sort
+
+      - name: Upload corrected device tree
         uses: actions/upload-artifact@v4
         with:
-          name: alcatel-9032x-device-tree-preflight
+          name: alcatel-9032x-device-tree-fixed
           path: generated-device-tree/
           if-no-files-found: error
           retention-days: 14
