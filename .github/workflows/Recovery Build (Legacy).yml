@@ -52,8 +52,8 @@ jobs:
 
       - name: Download and verify stock recovery
         env:
-          IMG_URL: ${{ inputs.IMG_URL }}
-          IMG_SHA256: ${{ inputs.IMG_SHA256 }}
+          IMG_URL: ${{ inputs.IMG_URL || 'https://github.com/FeaturedPr0ject/GernelOStest/releases/download/Recovery/recovery-original.img' }}
+          IMG_SHA256: ${{ inputs.IMG_SHA256 || 'fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07' }}
         run: |
           set -euo pipefail
           curl --fail --location --retry 3 --retry-delay 2 "$IMG_URL" --output recovery-original.img
