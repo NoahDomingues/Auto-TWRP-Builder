@@ -1,6 +1,14 @@
 name: TWRP Device Tree Fix and Preflight
 
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/**"
+      - "README.md"
   workflow_dispatch:
     inputs:
       IMG_URL:
