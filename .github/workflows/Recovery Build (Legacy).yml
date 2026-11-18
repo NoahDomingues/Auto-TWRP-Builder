@@ -1,4 +1,4 @@
-name: Recovery Build (Preflight)
+name: TWRP Device Tree Preflight
 
 on:
   workflow_dispatch:
@@ -8,150 +8,51 @@ on:
         required: true
         default: 'https://github.com/FeaturedPr0ject/GernelOStest/releases/download/Recovery/recovery-original.img'
       IMG_SHA256:
-        description: 'Expected SHA-256 of the input recovery image'
+        description: 'Expected SHA-256'
         required: true
         default: 'fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07'
-      MANIFEST_URL:
-        description: 'MANIFEST_URL (if want to use SSH keys, use git@github.com:XXXXX)'
-        required: true
-        default: 'https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni'
-      MANIFEST_BRANCH:
-        description: 'Manifest branch (do not use the old twrp-8.1 default without compatibility review)'
-        required: true
-      BUILD_TARGET:
-        description: 'BUILD_TARGET'
-        required: true
-        default: 'recovery'
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-20.04
-    permissions:
-      contents: write
+  generate-device-tree:
+    runs-on: ubuntu-22.04
     steps:
-    - name: Display Run Parameters
-      run: |
-        echo "::group::User Environment Variables"
-        echo "Manifest URL: ${{ github.event.inputs.MANIFEST_URL }}"
-        echo "Manifest Branch: ${{ github.event.inputs.MANIFEST_BRANCH }}"
-        echo "Build Target: ${{ github.event.inputs.BUILD_TARGET }}.img"
-        echo "::endgroup::"
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-    # You might want to Checkout your repo first, but not mandatory
-    - name: Check Out
-      uses: actions/checkout@v3
-    # Cleanup The Actions Workspace Using Custom Composite Run Actions
-    - name: Cleanup
-      uses: rokibhasansagar/slimhub_actions@main
-      # That's it! Now use your normal steps
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: Prepare the environment
-      run: |
-        sudo apt update
-        sudo apt -y upgrade
-        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib libc6-dev lib32ncurses5-dev x11proto-core-dev libx11-dev tree lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev libxml2 lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libncurses5 python3
-        sudo apt -y install python3 python3-pip cpio wget
-        pip3 install twrpdtgen
-    - name: Install OpenJDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'zulu'
-        java-version: '8'
+      - name: Install device tree generator
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install twrpdtgen
 
-    - name: Setup SSH Keys
-      if: ${{ startsWith(github.event.inputs.MANIFEST_URL, 'git@github.com') }}
-      uses: webfactory/ssh-agent@v0.5.4
-      with:
-          ssh-private-key: |
-              ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Download and verify stock recovery
+        env:
+          IMG_URL: ${{ inputs.IMG_URL }}
+          IMG_SHA256: ${{ inputs.IMG_SHA256 }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 "$IMG_URL" --output recovery-original.img
+          echo "$IMG_SHA256  recovery-original.img" | sha256sum --check
+          test "$(stat --format=%s recovery-original.img)" -eq 33554432
 
-    - name: Install repo
-      run: |
-        mkdir ~/bin
-        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-        chmod a+x ~/bin/repo
-        sudo ln -sf ~/bin/repo /usr/bin/repo
+      - name: Generate device tree
+        run: |
+          set -euo pipefail
+          python scripts/build.py --input recovery-original.img --output generated-device-tree
+          find generated-device-tree -maxdepth 5 -type f -print | sort
+          grep -RniE 'TARGET_ARCH|TARGET_2ND_ARCH|BOARD_KERNEL|AB_OTA|super|dynamic|fstab|arm64|arm32' generated-device-tree || true
 
-    - name: Initialize repo
-      run: |
-        mkdir workspace
-        cd workspace
-        echo "workspace-folder=$(pwd)" >> $GITHUB_OUTPUT
-        git config --global user.name "azwhikaru"
-        git config --global user.email "azwhikaru+37921907@github.com"
-        repo init --depth=1 -u ${{ github.event.inputs.MANIFEST_URL }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
-      id: pwd
-
-    - name: Check Build Tree
-      uses: haya14busa/action-cond@v1
-      id: buildtree
-      with:
-        cond: ${{ github.event.inputs.MANIFEST_BRANCH == 'twrp-11' || github.event.inputs.MANIFEST_BRANCH == 'twrp-12.1' }}
-        if_true: twrp
-        if_false: omni
-
-
-    - name: Repo Sync
-      run: |
-        repo sync -j$(nproc --all) --force-sync
-      working-directory: workspace
-    - name: Download and verify stock recovery
-      run: |
-        set -euo pipefail
-        curl -fL --retry 3 --retry-delay 2 '${{ github.event.inputs.IMG_URL }}' -o recovery-original.img
-        echo '${{ github.event.inputs.IMG_SHA256 }}  recovery-original.img' | sha256sum -c -
-        test "$(stat -c%s recovery-original.img)" -eq 33554432
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-
-    - name: Generate Device Tree
-      run: |
-        set -euo pipefail
-        python3 ${GITHUB_WORKSPACE}/scripts/build.py -i recovery-original.img -o device
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-      id: gdt
-
-    - name: Sync Device Dependencies
-      run: |
-        bash ${GITHUB_WORKSPACE}/scripts/convert.sh ${{ steps.gdt.outputs.DEVICE_PATH }}/${{ steps.buildtree.outputs.value }}.dependencies
-        repo sync -j$(nproc --all)
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-      continue-on-error: true
-
-    - name: Set Swap Space
-      uses: pierotofy/set-swap-space@master
-      with:
-        swap-size-gb: 12
-
-    - name: Switch to Python2
-      run: |
-        sudo apt -y install python
-        sudo rm -rf /usr/bin/python
-        sudo ln -s /usr/bin/python2 /usr/bin/python
-        # sudo ln -s /usr/bin/python3 /usr/bin/python3
-      continue-on-error: true
-
-    - name: Building recovery
-      run: |
-        source build/envsetup.sh
-        export ALLOW_MISSING_DEPENDENCIES=true
-        lunch ${{ steps.gdt.outputs.MAKEFILE_NAME }}-eng
-        make clean
-        make ${{ github.event.inputs.BUILD_TARGET }}image -j$(nproc --all)
-      working-directory: ${{ steps.pwd.outputs.workspace-folder }}
-
-    - name: Upload to Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: | 
-          workspace/out/target/product/${{ steps.gdt.outputs.DEVICE_NAME }}/${{ github.event.inputs.BUILD_TARGET }}.img
-          workspace/out/target/product/${{ steps.gdt.outputs.DEVICE_NAME }}/*.zip
-          workspace/out/target/product/${{ steps.gdt.outputs.DEVICE_NAME }}/*vendor*.img
-        name: ${{ steps.gdt.outputs.DEVICE_NAME }}-${{ github.run_id }}
-        tag_name: ${{ github.run_id }}
-        body: |
-          Manifest: ${{ github.event.inputs.MANIFEST_BRANCH }}
-          Device: ${{ steps.gdt.outputs.DEVICE_NAME }}
-          Target: ${{ github.event.inputs.BUILD_TARGET }}.img
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload generated device tree for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: alcatel-9032x-device-tree-preflight
+          path: generated-device-tree/
+          if-no-files-found: error
+          retention-days: 14
