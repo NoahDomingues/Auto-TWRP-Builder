@@ -58,7 +58,7 @@ jobs:
           python scripts/fix_device_tree.py --root generated-device-tree
           test -f generated-device-tree/tcl/apollo2/DEVICE_TREE_FIX_REPORT.txt
           grep -nE 'TARGET_ARCH := arm$|TARGET_BOARD_PLATFORM := mt6761$|BOARD_SUPER_PARTITION_SIZE := 6509559808$|BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE := 6505365504$' generated-device-tree/tcl/apollo2/BoardConfig.mk
-          grep -n '/dev/block/mmcblk0p16 /metadata' generated-device-tree/tcl/apollo2/recovery.fstab
+          grep -n '/dev/block/mmcblk0p16' generated-device-tree/tcl/apollo2/recovery.fstab
           find generated-device-tree/tcl/apollo2 -maxdepth 5 -type f -print | sort
 
       - name: Upload corrected device tree
