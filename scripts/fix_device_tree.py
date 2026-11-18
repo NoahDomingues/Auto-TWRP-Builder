@@ -266,6 +266,38 @@ def fix_tree(root: Path) -> Path:
         if not re.search(rf"^\s*{name}\s*:=\s*{re.escape(value)}\s*$", final_text, re.MULTILINE):
             raise RuntimeError(f"Validation failed: {name} != {value}")
 
+    product_text = product_file.read_text(encoding="utf-8")
+    product_required = {
+        "PRODUCT_DEVICE": DEVICE_CODENAME,
+        "PRODUCT_NAME": "omni_apollo2",
+        "PRODUCT_BRAND": "Alcatel",
+        "PRODUCT_MODEL": "9032X",
+        "PRODUCT_MANUFACTURER": "TCL",
+        "BUILD_FINGERPRINT": STOCK_FINGERPRINT,
+    }
+    for name, value in product_required.items():
+        if not re.search(rf"^\s*{name}\s*:=\s*{re.escape(value)}\s*$", product_text, re.MULTILINE):
+            raise RuntimeError(f"Product identity validation failed: {name} != {value}")
+
+    device_text = (device_dir / "device.mk").read_text(encoding="utf-8")
+    if not re.search(r"^\s*PRODUCT_USE_DYNAMIC_PARTITIONS\s*:=\s*true\s*$", device_text, re.MULTILINE):
+        raise RuntimeError("PRODUCT_USE_DYNAMIC_PARTITIONS is not enabled in device.mk")
+
+    fstab_text = (device_dir / "recovery.fstab").read_text(encoding="utf-8")
+    metadata_rows = [
+        line for line in fstab_text.splitlines()
+        if line.strip() and not line.lstrip().startswith("#") and re.search(r"(^|\s)/metadata(\s|$)", line)
+    ]
+    if len(metadata_rows) != 1 or "/dev/block/mmcblk0p16" not in metadata_rows[0]:
+        raise RuntimeError("Metadata fstab validation failed")
+
+    init_text = (device_dir / "recovery/root/init.recovery.mt6761.rc").read_text(encoding="utf-8")
+    if "import /init.recovery.smartlog.rc" in init_text and not list(device_dir.rglob("init.recovery.smartlog.rc")):
+        raise RuntimeError("Recovery init still imports a missing smartlog file")
+
+    if re.search(r"^\s*(TARGET_KERNEL_SOURCE|TARGET_KERNEL_CONFIG|TARGET_2ND_ARCH)\s*(?::=|\?=|\+=)", final_text, re.MULTILINE):
+        raise RuntimeError("Unexpected kernel-source or 64-bit secondary-architecture setting remains")
+
     print(f"Fixed device tree: {device_dir}")
     print(f"BoardConfig: {board}")
     print(f"Product file: {product_file}")
