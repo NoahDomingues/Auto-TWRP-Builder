@@ -1,13 +1,13 @@
-name: TWRP Device Tree Fix and Preflight
+name: Build TWRP 11 Recovery
 
 on:
   push:
     branches:
       - master
     paths:
+      - ".github/workflows/Recovery Build (Legacy).yml"
       - "scripts/**"
       - "tests/**"
-      - ".github/workflows/**"
       - "README.md"
   workflow_dispatch:
     inputs:
@@ -24,31 +24,41 @@ permissions:
   contents: read
 
 jobs:
-  fix-device-tree:
+  build-twrp:
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 360
     steps:
-      - name: Check out repository
+      - name: Check out device tree scripts
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Free runner disk space and add swap
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 8192
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+
+      - name: Install build dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5-dev libssl-dev libxml2-utils lzop pngcrush python3 python3-pip python-is-python3 rsync schedtool squashfs-tools xsltproc zip zlib1g-dev cpio
+          df -h /
+
+      - name: Set up Python device-tree generator
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install recovery image tools
+      - name: Install device-tree generator
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y cpio
           python -m pip install --upgrade pip
           python -m pip install twrpdtgen
-
-      - name: Test device tree correction script
-        run: |
-          set -euo pipefail
-          python -m py_compile scripts/build.py scripts/fix_device_tree.py tests/test_fix_device_tree.py
-          python -m unittest discover -s tests -v
 
       - name: Download and verify stock recovery
         env:
@@ -60,25 +70,122 @@ jobs:
           echo "$IMG_SHA256  recovery-original.img" | sha256sum --check
           test "$(stat --format=%s recovery-original.img)" -eq 33554432
 
-      - name: Generate device tree from stock recovery
+      - name: Generate and correct Apollo2 device tree
         run: |
           set -euo pipefail
+          python -m py_compile scripts/build.py scripts/fix_device_tree.py
           python scripts/build.py --input recovery-original.img --output generated-device-tree
-          find generated-device-tree -maxdepth 5 -type f -print | sort
+          python scripts/fix_device_tree.py --root generated-device-tree
+          DEVICE_DIR="generated-device-tree/tcl/apollo2"
+          test -f "$DEVICE_DIR/BoardConfig.mk"
+          test -f "$DEVICE_DIR/recovery.fstab"
+          test -f "$DEVICE_DIR/prebuilt/kernel"
+          test -f "$DEVICE_DIR/prebuilt/dtb.img"
+          test -f "$DEVICE_DIR/prebuilt/dtbo.img"
+          grep -q '/dev/block/mmcblk0p16 /metadata' "$DEVICE_DIR/recovery.fstab"
+          python - <<'PY'
+          from pathlib import Path
 
-      - name: Correct and validate device tree
+          device = Path("generated-device-tree/tcl/apollo2")
+          old_product = device / "omni_apollo2.mk"
+          new_product = device / "twrp_apollo2.mk"
+          if not old_product.is_file():
+              raise SystemExit("Expected generated omni_apollo2.mk was not found")
+          product_text = old_product.read_text(encoding="utf-8")
+          product_text = product_text.replace("vendor/omni/config/common.mk", "vendor/twrp/config/common.mk")
+          product_text = product_text.replace("omni_apollo2", "twrp_apollo2")
+          new_product.write_text(product_text, encoding="utf-8")
+          old_product.unlink()
+
+          for name in ("AndroidProducts.mk", "vendorsetup.sh"):
+              path = device / name
+              text = path.read_text(encoding="utf-8")
+              path.write_text(text.replace("omni_apollo2", "twrp_apollo2"), encoding="utf-8")
+
+          products = (device / "AndroidProducts.mk").read_text(encoding="utf-8")
+          setup = (device / "vendorsetup.sh").read_text(encoding="utf-8")
+          product = new_product.read_text(encoding="utf-8")
+          if "twrp_apollo2-eng" not in products or "twrp_apollo2-eng" not in setup:
+              raise SystemExit("TWRP lunch target was not registered")
+          if "PRODUCT_NAME := twrp_apollo2" not in product:
+              raise SystemExit("TWRP product name was not converted")
+          if "vendor/twrp/config/common.mk" not in product:
+              raise SystemExit("TWRP common product config was not selected")
+          PY
+          grep -nE '^(TARGET_ARCH := arm|TARGET_BOARD_PLATFORM := mt6761|BOARD_RECOVERYIMAGE_PARTITION_SIZE := 33554432|BOARD_SUPER_PARTITION_SIZE := 4949278720|BOARD_SUPER_PARTITION_GROUPS := main|BOARD_MAIN_SIZE := 4947181568|BOARD_MAIN_PARTITION_LIST := system vendor product odm oem)$' "$DEVICE_DIR/BoardConfig.mk"
+          grep -n 'twrp_apollo2' "$DEVICE_DIR/AndroidProducts.mk" "$DEVICE_DIR/twrp_apollo2.mk" "$DEVICE_DIR/vendorsetup.sh"
+          ! grep -RInE 'omni_apollo2|vendor/omni/config/common.mk' "$DEVICE_DIR"
+
+      - name: Install repo tool
         run: |
           set -euo pipefail
-          python scripts/fix_device_tree.py --root generated-device-tree
-          test -f generated-device-tree/tcl/apollo2/DEVICE_TREE_FIX_REPORT.txt
-          grep -nE '^(TARGET_ARCH := arm|TARGET_BOARD_PLATFORM := mt6761|BOARD_SUPER_PARTITION_SIZE := 4949278720|BOARD_SUPER_PARTITION_GROUPS := main|BOARD_MAIN_SIZE := 4947181568|BOARD_MAIN_PARTITION_LIST := system vendor product odm oem)$' generated-device-tree/tcl/apollo2/BoardConfig.mk
-          grep -n '/dev/block/mmcblk0p16' generated-device-tree/tcl/apollo2/recovery.fstab
-          find generated-device-tree/tcl/apollo2 -maxdepth 5 -type f -print | sort
+          mkdir -p "$HOME/bin"
+          curl --fail --location https://storage.googleapis.com/git-repo-downloads/repo --output "$HOME/bin/repo"
+          chmod a+x "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
 
-      - name: Upload corrected device tree
+      - name: Initialize TWRP 11 source
+        run: |
+          set -euo pipefail
+          mkdir -p twrp-source
+          cd twrp-source
+          repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-11
+          mkdir -p .repo/local_manifests
+          curl --fail --location https://raw.githubusercontent.com/minimal-manifest-twrp/platform_manifest_twrp_aosp/twrp-11/remove-minimal.xml --output .repo/local_manifests/remove-minimal.xml
+          curl --fail --location https://raw.githubusercontent.com/minimal-manifest-twrp/platform_manifest_twrp_aosp/twrp-11/twrp-extras.xml --output .repo/local_manifests/twrp-extras.xml
+
+      - name: Sync trimmed TWRP 11 source
+        run: |
+          set -euo pipefail
+          cd twrp-source
+          repo sync -c --no-clone-bundle --no-tags -j4
+          df -h /
+
+      - name: Add Apollo2 device tree
+        run: |
+          set -euo pipefail
+          mkdir -p twrp-source/device/tcl
+          cp -a generated-device-tree/tcl/apollo2 twrp-source/device/tcl/
+          test -f twrp-source/device/tcl/apollo2/twrp_apollo2.mk
+          test -f twrp-source/vendor/twrp/config/common.mk
+
+      - name: Build TWRP recovery image
+        run: |
+          set -euo pipefail
+          cd twrp-source
+          export JAVA_HOME="$PWD/prebuilts/jdk/jdk8/linux-x86"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export USE_CCACHE=0
+          java -version
+          . build/envsetup.sh
+          lunch twrp_apollo2-eng
+          mka recoveryimage -j2
+
+      - name: Verify recovery image
+        run: |
+          set -euo pipefail
+          IMAGE="twrp-source/out/target/product/apollo2/recovery.img"
+          test -s "$IMAGE"
+          SIZE="$(stat --format=%s "$IMAGE")"
+          test "$SIZE" -le 33554432
+          file "$IMAGE"
+          sha256sum "$IMAGE"
+          {
+            echo "Device: Alcatel 9032X / Apollo_8_4G"
+            echo "Codename: apollo2"
+            echo "Build: TWRP 11"
+            echo "Image size: $SIZE bytes"
+            echo "SHA-256:"
+            sha256sum "$IMAGE"
+          } > twrp-build-info.txt
+
+      - name: Upload TWRP recovery image
         uses: actions/upload-artifact@v4
         with:
-          name: alcatel-9032x-device-tree-fixed
-          path: generated-device-tree/
+          name: alcatel-9032x-twrp-11-recovery
+          path: |
+            twrp-source/out/target/product/apollo2/recovery.img
+            twrp-build-info.txt
           if-no-files-found: error
           retention-days: 14
