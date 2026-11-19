@@ -31,8 +31,8 @@ jobs:
       - name: Free runner disk space and add swap
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 512
-          swap-size-mb: 8192
+          root-reserve-mb: 1024
+          swap-size-mb: 2048
           remove-dotnet: "true"
           remove-android: "true"
           remove-haskell: "true"
@@ -45,9 +45,16 @@ jobs:
       - name: Install build dependencies
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5-dev libssl-dev libxml2-utils lzop pngcrush python3 python3-pip python-is-python3 rsync schedtool squashfs-tools xsltproc zip zlib1g-dev cpio
           df -h /
+          df -i /
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo apt-get clean
+          sudo apt-get update -o Acquire::Languages=none -o Acquire::GzipIndexes=true
+          sudo apt-get install -y --no-install-recommends bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5-dev libssl-dev libxml2-utils lzop pngcrush python3 python3-pip python-is-python3 rsync schedtool squashfs-tools xsltproc zip zlib1g-dev cpio
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          df -h /
+          df -i /
 
       - name: Set up Python device-tree generator
         uses: actions/setup-python@v5
