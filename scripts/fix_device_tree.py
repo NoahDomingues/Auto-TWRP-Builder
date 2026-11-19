@@ -332,7 +332,7 @@ def fix_tree(root: Path) -> Path:
     if "BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img" not in final_text:
         raise RuntimeError("Prebuilt DTBO image path is missing or was not enabled")
 
-    if re.search(r"^\\s*BOARD_AVB_(ENABLE|RECOVERY_KEY_PATH|RECOVERY_ALGORITHM|RECOVERY_ROLLBACK_INDEX|RECOVERY_ROLLBACK_INDEX_LOCATION)\\s*(?::=|\\?=|\\+=)", final_text, re.MULTILINE):
+    if re.search(r"^\s*BOARD_AVB_(ENABLE|RECOVERY_KEY_PATH|RECOVERY_ALGORITHM|RECOVERY_ROLLBACK_INDEX|RECOVERY_ROLLBACK_INDEX_LOCATION)\s*(?::=|\?=|\+=)", final_text, re.MULTILINE):
         raise RuntimeError("OEM AVB signing is unavailable; do not configure a mismatched test key")
 
     if "BOARD_BOOTIMAGE_PARTITION_SIZE" in final_text:
