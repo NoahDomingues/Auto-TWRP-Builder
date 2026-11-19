@@ -131,6 +131,9 @@ jobs:
           mkdir -p .repo/local_manifests
           curl --fail --location https://raw.githubusercontent.com/minimal-manifest-twrp/platform_manifest_twrp_aosp/twrp-11/remove-minimal.xml --output .repo/local_manifests/remove-minimal.xml
           curl --fail --location https://raw.githubusercontent.com/minimal-manifest-twrp/platform_manifest_twrp_aosp/twrp-11/twrp-extras.xml --output .repo/local_manifests/twrp-extras.xml
+          sed -i '/<include name="twrp-extras.xml"\/>/d' .repo/local_manifests/remove-minimal.xml
+          test -s .repo/local_manifests/remove-minimal.xml
+          test -s .repo/local_manifests/twrp-extras.xml
 
       - name: Sync trimmed TWRP 11 source
         run: |
