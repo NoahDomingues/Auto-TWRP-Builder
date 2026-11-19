@@ -132,6 +132,21 @@ jobs:
           curl --fail --location https://raw.githubusercontent.com/minimal-manifest-twrp/platform_manifest_twrp_aosp/twrp-11/remove-minimal.xml --output .repo/local_manifests/remove-minimal.xml
           curl --fail --location https://raw.githubusercontent.com/minimal-manifest-twrp/platform_manifest_twrp_aosp/twrp-11/twrp-extras.xml --output .repo/local_manifests/twrp-extras.xml
           sed -i '/<include name="twrp-extras.xml"\/>/d' .repo/local_manifests/remove-minimal.xml
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          manifest = Path(".repo/local_manifests/remove-minimal.xml")
+          text = manifest.read_text(encoding="utf-8")
+          text, count = re.subn(
+              r'<remove-project\s+name=["\']device/generic/art["\']\s*/>',
+              '',
+              text,
+          )
+          if count != 1:
+              raise SystemExit(f"Expected one device/generic/art removal entry, found {count}")
+          manifest.write_text(text, encoding="utf-8")
+          PY
           test -s .repo/local_manifests/remove-minimal.xml
           test -s .repo/local_manifests/twrp-extras.xml
 
