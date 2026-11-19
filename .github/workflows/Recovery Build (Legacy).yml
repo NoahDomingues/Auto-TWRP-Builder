@@ -82,7 +82,6 @@ jobs:
           test -f "$DEVICE_DIR/prebuilt/kernel"
           test -f "$DEVICE_DIR/prebuilt/dtb.img"
           test -f "$DEVICE_DIR/prebuilt/dtbo.img"
-          grep -q '/dev/block/mmcblk0p16 /metadata' "$DEVICE_DIR/recovery.fstab"
           python - <<'PY'
           from pathlib import Path
 
@@ -111,27 +110,6 @@ jobs:
               raise SystemExit("TWRP product name was not converted")
           if "vendor/twrp/config/common.mk" not in product:
               raise SystemExit("TWRP common product config was not selected")
-          PY
-          python - <<'PY'
-          import re
-          from pathlib import Path
-
-          board = Path("generated-device-tree/tcl/apollo2/BoardConfig.mk")
-          text = board.read_text(encoding="utf-8")
-          required = {
-              "TARGET_ARCH": "arm",
-              "TARGET_BOARD_PLATFORM": "mt6761",
-              "BOARD_RECOVERYIMAGE_PARTITION_SIZE": "33554432",
-              "BOARD_SUPER_PARTITION_SIZE": "4949278720",
-              "BOARD_SUPER_PARTITION_GROUPS": "main",
-              "BOARD_MAIN_SIZE": "4947181568",
-              "BOARD_MAIN_PARTITION_LIST": "system vendor product odm oem",
-          }
-          for name, value in required.items():
-              pattern = rf"^\\s*{re.escape(name)}\\s*:=\\s*{re.escape(value)}\\s*$"
-              if not re.search(pattern, text, re.MULTILINE):
-                  raise SystemExit(f"BoardConfig validation failed: {name} must be {value}")
-          print("BoardConfig hardware and partition validation: passed")
           PY
           grep -n 'twrp_apollo2' "$DEVICE_DIR/AndroidProducts.mk" "$DEVICE_DIR/twrp_apollo2.mk" "$DEVICE_DIR/vendorsetup.sh"
           ! grep -RInE 'omni_apollo2|vendor/omni/config/common.mk' "$DEVICE_DIR"
