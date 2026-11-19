@@ -88,8 +88,11 @@ class DeviceTreeFixTests(unittest.TestCase):
             init = (result / "recovery" / "root" / "init.recovery.mt6761.rc").read_text(encoding="utf-8")
 
             self.assertEqual(result.relative_to(root).as_posix(), "tcl/apollo2")
-            self.assertIn("BOARD_SUPER_PARTITION_SIZE := 6509559808", board)
-            self.assertIn("BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE := 6505365504", board)
+            self.assertIn("BOARD_SUPER_PARTITION_SIZE := 4949278720", board)
+            self.assertIn("BOARD_SUPER_PARTITION_GROUPS := main", board)
+            self.assertIn("BOARD_MAIN_SIZE := 4947181568", board)
+            self.assertIn("BOARD_MAIN_PARTITION_LIST := system vendor product odm oem", board)
+            self.assertNotIn("BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE", board)
             self.assertIn("TARGET_USES_64_BIT_BINDER := false", board)
             self.assertNotIn("TARGET_KERNEL_SOURCE", board)
             self.assertIn("TW_INCLUDE_CRYPTO := true", board)
