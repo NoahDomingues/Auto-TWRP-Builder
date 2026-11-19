@@ -34,7 +34,9 @@ The workflow first generates a device tree from the stock recovery image, then r
 - Sets the product identity to Alcatel / TCL / 9032X while keeping the internal product codename.
 - Removes the import of the optional `init.recovery.smartlog.rc` only when that file is absent from the extracted recovery tree.
 
-AVB signing variables are removed from the test device tree because the OEM recovery private key is unavailable. The extracted 520-byte public key cannot sign an image, and the AOSP test key would not match the OEM chain descriptor. Any first test must use `fastboot boot` with the bootloader unlocked; it must not be flashed to the recovery partition.\n\nThe generated TWRP compatibility values `PLATFORM_VERSION := 16.1.0` and security patch `2099-12-31` are intentionally preserved. They are commonly used by TWRP device trees as build/rollback compatibility settings and are not the stock Android version or the stock security patch. The prebuilt-kernel variables are placed before their `ifeq` block so the stock kernel, DTB, and DTBO settings are actually selected during make evaluation.
+AVB signing variables are removed from the test device tree because the OEM recovery private key is unavailable. The extracted 520-byte public key cannot sign an image, and the AOSP test key would not match the OEM chain descriptor. Any first test must use `fastboot boot` with the bootloader unlocked; it must not be flashed to the recovery partition.
+
+The generated TWRP compatibility values `PLATFORM_VERSION := 16.1.0` and security patch `2099-12-31` are intentionally preserved. They are commonly used by TWRP device trees as build/rollback compatibility settings and are not the stock Android version or the stock security patch. The prebuilt-kernel variables are placed before their `ifeq` block so the stock kernel, DTB, and DTBO settings are actually selected during make evaluation.
 
 ## Run the corrected preflight
 
