@@ -141,18 +141,47 @@ jobs:
           sed -i '/<include name="twrp-extras.xml"\/>/d' .repo/local_manifests/remove-minimal.xml
           python - <<'PY'
           from pathlib import Path
-          import re
+          import xml.etree.ElementTree as ET
 
-          manifest = Path(".repo/local_manifests/remove-minimal.xml")
-          text = manifest.read_text(encoding="utf-8")
-          text, count = re.subn(
-              r'<remove-project\s+name=["\']device/generic/art["\']\s*/>',
-              '',
-              text,
-          )
-          if count != 1:
-              raise SystemExit(f"Expected one device/generic/art removal entry, found {count}")
-          manifest.write_text(text, encoding="utf-8")
+          manifest_root = Path(".repo/manifests")
+          project_names = set()
+          visited = set()
+
+          def collect_manifest(path):
+              path = path.resolve()
+              if path in visited or not path.is_file():
+                  return
+              visited.add(path)
+              root = ET.parse(path).getroot()
+              for project in root.findall(".//project"):
+                  name = project.get("name")
+                  if name:
+                      project_names.add(name)
+              for include in root.findall(".//include"):
+                  name = include.get("name")
+                  if name:
+                      collect_manifest(manifest_root / name)
+
+          collect_manifest(manifest_root / "default.xml")
+          if not project_names:
+              raise SystemExit("Could not read projects from initialized TWRP manifest")
+
+          local_manifest = Path(".repo/local_manifests/remove-minimal.xml")
+          tree = ET.parse(local_manifest)
+          root = tree.getroot()
+          removed = []
+          for parent in root.iter():
+              for child in list(parent):
+                  if child.tag == "remove-project":
+                      name = child.get("name")
+                      if name and name not in project_names:
+                          removed.append(name)
+                          parent.remove(child)
+
+          tree.write(local_manifest, encoding="UTF-8", xml_declaration=True)
+          print(f"Kept valid removals; pruned {len(removed)} absent projects")
+          if removed:
+              print("\n".join(removed))
           PY
           test -s .repo/local_manifests/remove-minimal.xml
           test -s .repo/local_manifests/twrp-extras.xml
