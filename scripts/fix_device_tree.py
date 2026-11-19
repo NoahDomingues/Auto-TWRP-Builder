@@ -101,6 +101,12 @@ def patch_board_config(board_path: Path) -> None:
             "BOARD_BOOTIMAGE_PARTITION_SIZE",
             "BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE",
             "BOARD_ALPS_DYNAMIC_PARTITIONS_PARTITION_LIST",
+            "BOARD_AVB_ENABLE",
+            "BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS",
+            "BOARD_AVB_RECOVERY_KEY_PATH",
+            "BOARD_AVB_RECOVERY_ALGORITHM",
+            "BOARD_AVB_RECOVERY_ROLLBACK_INDEX",
+            "BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION",
         },
     )
 
@@ -261,6 +267,8 @@ def write_report(device_dir: Path) -> None:
         "",
         "TWRP FBE crypto support is enabled; successful decryption still depends on the device-specific fstab and MediaTek keymaster components.",
         "The TWRP build compatibility values PLATFORM_VERSION=16.1.0 and security patch 2099-12-31 are preserved.",
+        "AVB signing is intentionally not configured: the OEM recovery private key is unavailable, and the public key cannot sign images.",
+        "A test recovery must be tested with unlocked fastboot boot only; no flash operation is performed by this script.",
         "No recovery image was built or flashed by this script.",
     ]
     (device_dir / "DEVICE_TREE_FIX_REPORT.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
@@ -323,6 +331,9 @@ def fix_tree(root: Path) -> Path:
 
     if "BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img" not in final_text:
         raise RuntimeError("Prebuilt DTBO image path is missing or was not enabled")
+
+    if re.search(r"^\\s*BOARD_AVB_(ENABLE|RECOVERY_KEY_PATH|RECOVERY_ALGORITHM|RECOVERY_ROLLBACK_INDEX|RECOVERY_ROLLBACK_INDEX_LOCATION)\\s*(?::=|\\?=|\\+=)", final_text, re.MULTILINE):
+        raise RuntimeError("OEM AVB signing is unavailable; do not configure a mismatched test key")
 
     if "BOARD_BOOTIMAGE_PARTITION_SIZE" in final_text:
         raise RuntimeError("Unverified boot partition size must not be hardcoded")
