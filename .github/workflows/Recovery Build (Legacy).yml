@@ -28,9 +28,6 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 360
     steps:
-      - name: Check out device tree scripts
-        uses: actions/checkout@v4
-
       - name: Free runner disk space and add swap
         uses: easimon/maximize-build-space@master
         with:
@@ -41,6 +38,9 @@ jobs:
           remove-haskell: "true"
           remove-codeql: "true"
           remove-docker-images: "true"
+
+      - name: Check out device tree scripts
+        uses: actions/checkout@v4
 
       - name: Install build dependencies
         run: |
