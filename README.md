@@ -13,7 +13,7 @@ Target device: Alcatel 9032X, device codename Apollo_8_4G, internal build codena
 - Stock recovery image: 33,554,432 bytes
 - Recovery partition: 33,554,432 bytes
 - Userdata filesystem: F2FS
-- Super partition: 6,509,559,808 bytes
+- Super partition: 4,949,278,720 bytes
 - Metadata mount source observed on the running tablet: `/dev/block/mmcblk0p16`
 - Stock fingerprint: `Alcatel/9032X/Apollo_8_4G:10/QP1A.190711.020/1E24:user/release-keys`
 
@@ -27,7 +27,7 @@ The workflow first generates a device tree from the stock recovery image, then r
 - Sets the build target to ARM32 and MT6761, and removes generated secondary-architecture and kernel-source references that do not match this prebuilt-kernel tree.
 - Keeps the stock kernel, DTB, and DTBO prebuilt files and checks their expected sizes before uploading the result.
 - Sets the recovery image partition size to 32 MiB. It does not hardcode the separate boot partition size because that partition size has not been verified.
-- Sets the physical super partition size to 6,509,559,808 bytes. The dynamic partition group is limited to 6,505,365,504 bytes, reserving 4 MiB for metadata and alignment.
+- Sets the physical super partition size to 4,949,278,720 bytes and the `main` group maximum to 4,947,181,568 bytes, both read directly from the device's `lpdump` output. The actual group name is `main`; no guessed 4 MiB reserve is used.
 - Sets the dynamic partition list to `system vendor product odm oem` and enables dynamic partitions in `device.mk`.
 - Uses the observed metadata block device `/dev/block/mmcblk0p16` in the recovery fstab.
 - Enables TWRP FBE/metadata-decryption build features because the stock system reports `ro.crypto.type=file`; actual decryption remains unverified until the stock userdata fstab and MediaTek Keymaster dependencies are checked.
