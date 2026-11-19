@@ -100,6 +100,8 @@ class DeviceTreeFixTests(unittest.TestCase):
             self.assertIn("TW_INCLUDE_FBE_METADATA_DECRYPT := true", board)
             self.assertIn("BOARD_USES_METADATA_PARTITION := true", board)
             self.assertNotIn("BOARD_BOOTIMAGE_PARTITION_SIZE", board)
+            self.assertNotIn("BOARD_AVB_ENABLE", board)
+            self.assertNotIn("BOARD_AVB_RECOVERY_KEY_PATH", board)
             self.assertLess(
                 board.index("TARGET_FORCE_PREBUILT_KERNEL := true"),
                 board.index("ifeq ($(TARGET_FORCE_PREBUILT_KERNEL),true)"),
