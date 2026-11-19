@@ -4,9 +4,8 @@ import argparse
 import re
 from pathlib import Path
 
-SUPER_PARTITION_SIZE = 6509559808
-DYNAMIC_PARTITION_OVERHEAD = 4 * 1024 * 1024
-DYNAMIC_PARTITION_GROUP_SIZE = SUPER_PARTITION_SIZE - DYNAMIC_PARTITION_OVERHEAD
+SUPER_PARTITION_SIZE = 4949278720
+DYNAMIC_PARTITION_GROUP_SIZE = 4947181568
 RECOVERY_PARTITION_SIZE = 33554432
 
 DEVICE_CODENAME = "apollo2"
@@ -100,6 +99,8 @@ def patch_board_config(board_path: Path) -> None:
             "TARGET_KERNEL_SOURCE",
             "TARGET_KERNEL_CONFIG",
             "BOARD_BOOTIMAGE_PARTITION_SIZE",
+            "BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE",
+            "BOARD_ALPS_DYNAMIC_PARTITIONS_PARTITION_LIST",
         },
     )
 
@@ -128,9 +129,9 @@ def patch_board_config(board_path: Path) -> None:
         "TW_INCLUDE_FBE": "true",
         "TW_INCLUDE_FBE_METADATA_DECRYPT": "true",
         "BOARD_USES_METADATA_PARTITION": "true",
-        "BOARD_SUPER_PARTITION_GROUPS": "alps_dynamic_partitions",
-        "BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE": str(DYNAMIC_PARTITION_GROUP_SIZE),
-        "BOARD_ALPS_DYNAMIC_PARTITIONS_PARTITION_LIST": DYNAMIC_PARTITIONS,
+        "BOARD_SUPER_PARTITION_GROUPS": "main",
+        "BOARD_MAIN_SIZE": str(DYNAMIC_PARTITION_GROUP_SIZE),
+        "BOARD_MAIN_PARTITION_LIST": DYNAMIC_PARTITIONS,
         "BOARD_USERDATAIMAGE_FILE_SYSTEM_TYPE": "f2fs",
         "TARGET_USERIMAGES_USE_EXT4": "true",
         "TARGET_USERIMAGES_USE_F2FS": "true",
@@ -252,7 +253,7 @@ def write_report(device_dir: Path) -> None:
         "Platform: MT6761; Android stock base: 10 / API 29",
         "Userspace architecture: ARM32 (armeabi-v7a)",
         f"Super partition size: {SUPER_PARTITION_SIZE} bytes",
-        f"Dynamic group size: {DYNAMIC_PARTITION_GROUP_SIZE} bytes (4 MiB reserved for metadata/alignment)",
+        f"Dynamic group main maximum size: {DYNAMIC_PARTITION_GROUP_SIZE} bytes (verified by lpdump)",
         f"Dynamic partitions: {DYNAMIC_PARTITIONS}",
         "Recovery partition size: 33554432 bytes",
         "Metadata block device: /dev/block/mmcblk0p16",
@@ -306,9 +307,9 @@ def fix_tree(root: Path) -> Path:
         "TW_INCLUDE_FBE": "true",
         "TW_INCLUDE_FBE_METADATA_DECRYPT": "true",
         "BOARD_USES_METADATA_PARTITION": "true",
-        "BOARD_SUPER_PARTITION_GROUPS": "alps_dynamic_partitions",
-        "BOARD_ALPS_DYNAMIC_PARTITIONS_SIZE": str(DYNAMIC_PARTITION_GROUP_SIZE),
-        "BOARD_ALPS_DYNAMIC_PARTITIONS_PARTITION_LIST": DYNAMIC_PARTITIONS,
+        "BOARD_SUPER_PARTITION_GROUPS": "main",
+        "BOARD_MAIN_SIZE": str(DYNAMIC_PARTITION_GROUP_SIZE),
+        "BOARD_MAIN_PARTITION_LIST": DYNAMIC_PARTITIONS,
         "TARGET_RECOVERY_FSTAB": "$(DEVICE_PATH)/recovery.fstab",
     }
     for name, value in required.items():
