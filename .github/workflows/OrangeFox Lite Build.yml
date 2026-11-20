@@ -1,0 +1,237 @@
+name: Build GernalOS Lite OrangeFox Alpha 1
+
+on:
+  push:
+    branches:
+      - gernalos-lite-orangefox
+    paths:
+      - ".github/workflows/OrangeFox Lite Build.yml"
+      - "scripts/**"
+      - "tests/**"
+      - "README.md"
+      - "GERNALOS_LITE_ORANGEFOX_PORT_PLAN.md"
+  workflow_dispatch:
+    inputs:
+      IMG_URL:
+        description: "Verified stock recovery image URL"
+        required: true
+        default: "https://github.com/FeaturedPr0ject/GernelOStest/releases/download/Recovery/recovery-original.img"
+      IMG_SHA256:
+        description: "Expected stock recovery SHA-256"
+        required: true
+        default: "fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07"
+
+permissions:
+  contents: read
+
+jobs:
+  build-orangefox:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      FOX_BRANCH: "12.1"
+      DEVICE_CODENAME: apollo2
+      RECOVERY_PARTITION_SIZE: "33554432"
+    steps:
+      - name: Free runner disk space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 1024
+          swap-size-mb: 2048
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3 for preparation and tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Validate preparation scripts
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/build.py scripts/fix_device_tree.py scripts/create_vietnamese.py
+          python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Install build dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ccache curl flex g++-multilib gcc-multilib \
+            git git-lfs gnupg gperf imagemagick lib32readline-dev lib32z1-dev \
+            libelf-dev liblz4-tool libncurses5-dev libssl-dev libxml2-utils \
+            lzop pngcrush python3-pip rsync schedtool squashfs-tools xsltproc \
+            zip zlib1g-dev cpio file
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          df -h /
+
+      - name: Set up Java 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+
+      - name: Install twrpdtgen
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install twrpdtgen
+
+      - name: Download and verify stock recovery
+        env:
+          IMG_URL: ${{ inputs.IMG_URL || 'https://github.com/FeaturedPr0ject/GernelOStest/releases/download/Recovery/recovery-original.img' }}
+          IMG_SHA256: ${{ inputs.IMG_SHA256 || 'fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07' }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 "$IMG_URL" -o recovery-original.img
+          echo "$IMG_SHA256  recovery-original.img" | sha256sum --check
+          test "$(stat --format=%s recovery-original.img)" -eq "$RECOVERY_PARTITION_SIZE"
+          python scripts/build.py --input recovery-original.img --output generated-device-tree --expected-sha256 "$IMG_SHA256"
+          python scripts/fix_device_tree.py --root generated-device-tree
+
+      - name: Verify generated device tree
+        run: |
+          set -euo pipefail
+          DEVICE_DIR="generated-device-tree/tcl/apollo2"
+          test -s "$DEVICE_DIR/BoardConfig.mk"
+          test -s "$DEVICE_DIR/twrp_apollo2.mk"
+          test -s "$DEVICE_DIR/AndroidProducts.mk"
+          test -s "$DEVICE_DIR/vendorsetup.sh"
+          test -s "$DEVICE_DIR/recovery.fstab"
+          test -s "$DEVICE_DIR/prebuilt/kernel"
+          test -s "$DEVICE_DIR/prebuilt/dtb/mt6761.dtb"
+          test -s "$DEVICE_DIR/prebuilt/recovery_dtbo.img"
+          grep -q 'TW_DEFAULT_LANGUAGE := vn' "$DEVICE_DIR/BoardConfig.mk"
+          grep -q 'BOARD_INCLUDE_DTB_IN_BOOTIMG := true' "$DEVICE_DIR/BoardConfig.mk"
+          grep -q 'BOARD_INCLUDE_RECOVERY_DTBO := true' "$DEVICE_DIR/BoardConfig.mk"
+          grep -q '/dev/block/mmcblk0p16' "$DEVICE_DIR/recovery.fstab"
+          grep -q '/data.*f2fs\|/data f2fs' "$DEVICE_DIR/recovery.fstab"
+
+      - name: Install repo and OrangeFox sync script
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/bin" "$RUNNER_TEMP/orangefox-sync"
+          curl --fail --location https://storage.googleapis.com/git-repo-downloads/repo -o "$HOME/bin/repo"
+          chmod 0755 "$HOME/bin/repo"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          git clone --depth=1 https://gitlab.com/OrangeFox/sync.git "$RUNNER_TEMP/orangefox-sync"
+          test -s "$RUNNER_TEMP/orangefox-sync/orangefox_sync.sh"
+
+      - name: Sync official OrangeFox fox_12.1 sources
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/bin:$PATH"
+          FOX_SOURCE="$GITHUB_WORKSPACE/fox-source"
+          cd "$RUNNER_TEMP/orangefox-sync"
+          ./orangefox_sync.sh --branch "$FOX_BRANCH" --path "$FOX_SOURCE"
+          test -s "$FOX_SOURCE/build/envsetup.sh"
+          df -h /
+
+      - name: Generate and validate Vietnamese locale
+        run: |
+          set -euo pipefail
+          FOX_SOURCE="$GITHUB_WORKSPACE/fox-source"
+          python scripts/create_vietnamese.py --source "$FOX_SOURCE"
+          VN_RESOURCE="$FOX_SOURCE/gui/theme/extra-languages/languages/vn.xml"
+          test -s "$VN_RESOURCE"
+          python - "$VN_RESOURCE" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          root = ET.parse(path).getroot()
+          assert root.tag == "language"
+          assert root.findtext("display") == "Vietnamese"
+          assert root.find("resources") is not None
+          print("Validated Vietnamese resource:", path)
+          PY
+
+      - name: Add Apollo2 device tree
+        run: |
+          set -euo pipefail
+          FOX_SOURCE="$GITHUB_WORKSPACE/fox-source"
+          mkdir -p "$FOX_SOURCE/device/tcl"
+          cp -a generated-device-tree/tcl/apollo2 "$FOX_SOURCE/device/tcl/"
+          test -s "$FOX_SOURCE/device/tcl/apollo2/BoardConfig.mk"
+
+      - name: Set up Python 2.7 for legacy build tools
+        uses: actions/setup-python@v5
+        with:
+          python-version: "2.7"
+
+      - name: Build OrangeFox
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE/fox-source"
+          export PATH="$HOME/bin:$PATH"
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export TARGET_ARCH=arm
+          export FOX_BUILD_DEVICE=apollo2
+          export FOX_VANILLA_BUILD=1
+          export OF_FORCE_PREBUILT_KERNEL=1
+          export FOX_REMOVE_AAPT=1
+          export LC_ALL=C
+          export USE_CCACHE=0
+          export FOX_JAVA8_PATH="$JAVA_HOME/bin/java"
+          java -version
+          python --version
+          . build/envsetup.sh
+          lunch twrp_apollo2-eng
+          mka adbd recoveryimage -j2
+
+      - name: Verify Alpha 1 image and size limit
+        run: |
+          set -euo pipefail
+          FOX_SOURCE="$GITHUB_WORKSPACE/fox-source"
+          IMAGE="$(find "$FOX_SOURCE/out/target/product/apollo2" -maxdepth 1 -type f -name 'OrangeFox-*.img' -print -quit)"
+          test -n "$IMAGE" || { echo "OrangeFox output image not found"; exit 1; }
+          SIZE="$(stat --format=%s "$IMAGE")"
+          test "$SIZE" -gt 0
+          test "$SIZE" -le "$RECOVERY_PARTITION_SIZE" || { echo "Image exceeds 32 MiB"; exit 1; }
+          python3 - "$IMAGE" <<'PY'
+          import struct
+          import sys
+          from pathlib import Path
+          image = Path(sys.argv[1])
+          with image.open("rb") as stream:
+              header = stream.read(44)
+          if len(header) < 44 or header[:8] != b"ANDROID!":
+              raise SystemExit("Not an Android boot/recovery image")
+          version = struct.unpack_from("<I", header, 40)[0]
+          if version != 2:
+              raise SystemExit("Expected boot header v2, got v%d" % version)
+          print("Android image header version:", version)
+          PY
+          file "$IMAGE"
+          cp "$IMAGE" "$GITHUB_WORKSPACE/GernalOS-Lite-Alpha1-FoxDark-Vietnamese-apollo2.img"
+          sha256sum "$GITHUB_WORKSPACE/GernalOS-Lite-Alpha1-FoxDark-Vietnamese-apollo2.img" > "$GITHUB_WORKSPACE/SHA256SUMS.txt"
+          {
+            echo "Device: Alcatel 9032X / Apollo_8_4G"
+            echo "Codename: apollo2"
+            echo "Build: GernalOS Lite Alpha 1 – Fox Dark Vietnamese"
+            echo "OrangeFox manifest: fox_$FOX_BRANCH"
+            echo "Image size: $SIZE bytes"
+            echo "Boot image header: v2"
+            echo "Stock recovery base SHA-256: fea18b7c5c771054aec49559b09162be56dcc504667866fb2ffed54618886c07"
+            echo "Output SHA-256:"
+            cat "$GITHUB_WORKSPACE/SHA256SUMS.txt"
+            echo "This image has not been boot-tested or flashed on the tablet."
+          } > "$GITHUB_WORKSPACE/BUILD_INFO.txt"
+
+      - name: Upload GernalOS Lite Alpha 1 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gernalos-lite-alpha1-orangefox
+          path: |
+            GernalOS-Lite-Alpha1-FoxDark-Vietnamese-apollo2.img
+            BUILD_INFO.txt
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
