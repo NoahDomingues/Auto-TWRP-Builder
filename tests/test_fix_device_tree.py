@@ -81,7 +81,7 @@ class DeviceTreeFixTests(unittest.TestCase):
             self.assertIn("BOARD_INCLUDE_DTB_IN_BOOTIMG := true", board)
             self.assertIn("BOARD_INCLUDE_RECOVERY_DTBO := true", board)
             self.assertIn("PLATFORM_SECURITY_PATCH := 2021-11-05", board)
-            self.assertIn("TW_DEFAULT_LANGUAGE := vi", board)
+            self.assertIn("TW_DEFAULT_LANGUAGE := vn", board)
             self.assertNotIn("2099-12-31", board)
             self.assertNotIn("16.1.0", board)
             self.assertNotIn("TW_INCLUDE_CRYPTO", board)
