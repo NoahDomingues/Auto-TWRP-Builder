@@ -36,8 +36,8 @@ jobs:
       - name: Free runner disk space
         uses: easimon/maximize-build-space@master
         with:
-          root-reserve-mb: 1024
-          swap-size-mb: 2048
+          root-reserve-mb: 512
+          swap-size-mb: 0
           remove-dotnet: "true"
           remove-android: "true"
           remove-haskell: "true"
@@ -55,7 +55,11 @@ jobs:
       - name: Install build dependencies
         run: |
           set -euo pipefail
-          sudo apt-get update
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+          df -h /
+          df -i /
+          sudo apt-get -o Acquire::Languages=none update
           sudo apt-get install -y --no-install-recommends \
             bc bison build-essential ccache curl flex g++-multilib gcc-multilib \
             git git-lfs gnupg gperf imagemagick lib32readline-dev lib32z1-dev \
@@ -63,8 +67,9 @@ jobs:
             lzop pngcrush python3-pip python3-venv rsync schedtool squashfs-tools xsltproc \
             zip zlib1g-dev cpio file
           sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
+          sudo rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
           df -h /
+          df -i /
 
       - name: Set up Java 8
         uses: actions/setup-java@v4
