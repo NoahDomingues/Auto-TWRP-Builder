@@ -70,7 +70,7 @@ These are device-tree preparation changes. They are not proof that the resulting
 
 The CI currently tries official fox_12.1 because the official sync project currently documents 12.1 and 14.1, while 14.1 is described primarily for devices launched on Android 14 or later. This tablet shipped with Android 10. Therefore fox_12.1 is a candidate to test, not a branch/device compatibility result. If the build fails due to old Android 10 platform compatibility, reassess the base branch instead of patching around unknown errors.
 
-The build uses Python 2.7 as the default Python for legacy steps, FOX_VANILLA_BUILD for a non-Xiaomi tablet, and OF_FORCE_PREBUILT_KERNEL for the prebuilt stock kernel path. Do not set FOX_AB_DEVICE unless A/B status is proven. The current investigation did not prove A/B status.
+The build uses Python 2.7 as the default Python for legacy steps and Java 8 for fox_12.1, FOX_VANILLA_BUILD for a non-Xiaomi tablet, and OF_FORCE_PREBUILT_KERNEL for the prebuilt stock kernel path. Do not set FOX_AB_DEVICE unless A/B status is proven. The current investigation did not prove A/B status.
 
 ## Vietnamese interface and Dark theme
 
