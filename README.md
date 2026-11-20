@@ -57,7 +57,7 @@ The preparation script checks the generated prebuilt payload sizes before it all
 
 The CI workflow currently attempts the official OrangeFox fox_12.1 source branch. The current OrangeFox sync project documents branches 12.1 and 14.1; its build guide associates 12.1 with Android 12+ devices and 14.1 mostly with devices launched on Android 14+. This Alcatel shipped with Android 10, so fox_12.1 is a **candidate build experiment**, not a proven compatibility match. A successful compile must still be checked on the target device.
 
-The OrangeFox build guide requires Python 2.7 as the default Python for legacy build steps, says to use FOX_VANILLA_BUILD for non-Xiaomi devices, and recommends OF_FORCE_PREBUILT_KERNEL when a prebuilt kernel causes a NO KERNEL CONFIG error. OrangeFox-specific FOX variables are supplied from vendorsetup.sh, not BoardConfig.mk.
+The OrangeFox build guide requires Python 2.7 as the default Python for legacy build steps, recommends Java 8 for the fox_12.1 build variables, says to use FOX_VANILLA_BUILD for non-Xiaomi devices, and recommends OF_FORCE_PREBUILT_KERNEL when a prebuilt kernel causes a NO KERNEL CONFIG error. OrangeFox-specific FOX variables are supplied from vendorsetup.sh, not BoardConfig.mk.
 
 The first build uses a prebuilt stock kernel and does not enable LZMA ramdisk compression because kernel support has not been verified. FOX_REMOVE_AAPT is enabled as a size-saving trial; if the image or build loses a required feature, remove that option and retest.
 
