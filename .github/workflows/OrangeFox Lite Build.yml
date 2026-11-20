@@ -1,14 +1,6 @@
 name: Build GernalOS Lite OrangeFox Alpha 1
 
 on:
-  push:
-    branches: [gernalos-lite-orangefox]
-    paths:
-      - ".github/workflows/OrangeFox Lite Build.yml"
-      - "scripts/**"
-      - "tests/**"
-      - "README.md"
-      - "GERNALOS_LITE_ORANGEFOX_PORT_PLAN.md"
   workflow_dispatch:
     inputs:
       IMG_URL:
