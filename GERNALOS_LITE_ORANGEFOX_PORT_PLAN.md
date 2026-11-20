@@ -8,7 +8,7 @@
 - Device-tree codename: apollo2
 - Device-tree path: device/tcl/apollo2
 - OrangeFox interface: Dark appearance, selected through UI Center until a verified default-theme mechanism is available
-- Language: Vietnamese (vi) by default, only with a valid vi.xml resource
+- Language: Vietnamese (vi) by default, only with a valid vn.xml resource
 - Architecture: ARM32
 - First milestone: boot successfully; FBE is deferred
 - Recovery image limit: exactly 33,554,432 bytes (32 MiB)
@@ -75,8 +75,8 @@ The build uses Python 2.7 as the default Python for legacy steps and Java 8 for 
 ## Vietnamese interface and Dark theme
 
 - Keep extra-language resources enabled until the Vietnamese file is checked.
-- Require a real languages/vi.xml resource in the synced source.
-- CI must stop if vi.xml is absent; do not silently create a fake translation or ship an English UI labelled Vietnamese.
+- Require a real languages/vn.xml resource in the synced source.
+- CI must stop if vn.xml is absent; do not silently create a fake translation or ship an English UI labelled Vietnamese.
 - Keep terminal input, shell output, paths, block-device names, and command syntax in English.
 - Use the OrangeFox Dark style through UI Center after the first successful boot unless a branch-specific default theme mechanism is verified. Do not invent a theme variable.
 
