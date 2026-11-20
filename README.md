@@ -67,7 +67,7 @@ Keep and validate:
 
 - OrangeFox graphical recovery interface
 - Dark appearance selected through OrangeFox UI Center; automatic first-boot theme selection has not yet been verified
-- Vietnamese as the default UI language, only when a real vi.xml translation resource is present
+- Vietnamese as the default UI language, only when a real vn.xml translation resource is present
 - Install ZIP, Wipe, Mount, Reboot, recovery logs
 - Integrated terminal and ADB shell / ADB sideload
 - F2FS and ext4 support needed by this tablet
@@ -82,7 +82,7 @@ Defer or disable until separately tested:
 - Experimental drastic size reduction
 - Unverified filesystem and partition handlers
 
-The workflow deliberately stops if the OrangeFox source does not contain the Vietnamese languages/vi.xml resource. It must not publish an English-only recovery under a Vietnamese label. All terminal commands, partition names, paths, and shell output remain in English/technical form.
+The workflow deliberately stops if the OrangeFox source does not contain the Vietnamese languages/vn.xml resource. It must not publish an English-only recovery under a Vietnamese label. All terminal commands, partition names, paths, and shell output remain in English/technical form.
 
 ## CI workflow
 
