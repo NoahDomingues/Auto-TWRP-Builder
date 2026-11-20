@@ -70,11 +70,11 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
           df -h /
 
-      - name: Set up Java 11
+      - name: Set up Java 8
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "11"
+          java-version: "8"
 
       - name: Install twrpdtgen
         run: |
@@ -127,7 +127,8 @@ jobs:
           set -euo pipefail
           export PATH="$HOME/bin:$PATH"
           FOX_SOURCE="$GITHUB_WORKSPACE/fox-source"
-          bash "$RUNNER_TEMP/orangefox-sync/orangefox_sync.sh" --branch "$FOX_BRANCH" --path "$FOX_SOURCE"
+          cd "$RUNNER_TEMP/orangefox-sync"
+          ./orangefox_sync.sh --branch "$FOX_BRANCH" --path "$FOX_SOURCE"
           test -s "$FOX_SOURCE/build/envsetup.sh"
           df -h /
 
@@ -169,6 +170,7 @@ jobs:
           export FOX_REMOVE_AAPT=1
           export LC_ALL=C
           export USE_CCACHE=0
+          export FOX_JAVA8_PATH="$JAVA_HOME/bin/java"
           java -version
           python --version
           . build/envsetup.sh
