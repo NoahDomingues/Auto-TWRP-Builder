@@ -46,16 +46,11 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3 for preparation and tests
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
       - name: Validate preparation scripts
         run: |
           set -euo pipefail
-          python -m py_compile scripts/build.py scripts/fix_device_tree.py scripts/create_vietnamese.py
-          python -m unittest discover -s tests -p 'test_*.py' -v
+          python3 -m py_compile scripts/build.py scripts/fix_device_tree.py scripts/create_vietnamese.py
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Install build dependencies
         run: |
@@ -65,7 +60,7 @@ jobs:
             bc bison build-essential ccache curl flex g++-multilib gcc-multilib \
             git git-lfs gnupg gperf imagemagick lib32readline-dev lib32z1-dev \
             libelf-dev liblz4-tool libncurses5-dev libssl-dev libxml2-utils \
-            lzop pngcrush python3-pip rsync schedtool squashfs-tools xsltproc \
+            lzop pngcrush python3-pip python3-venv rsync schedtool squashfs-tools xsltproc \
             zip zlib1g-dev cpio file
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
@@ -80,8 +75,10 @@ jobs:
       - name: Install twrpdtgen
         run: |
           set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install twrpdtgen
+          python3 -m venv "$RUNNER_TEMP/python-tools"
+          "$RUNNER_TEMP/python-tools/bin/python" -m pip install --upgrade pip
+          "$RUNNER_TEMP/python-tools/bin/python" -m pip install twrpdtgen
+          echo "$RUNNER_TEMP/python-tools/bin" >> "$GITHUB_PATH"
 
       - name: Download and verify stock recovery
         env:
@@ -92,8 +89,8 @@ jobs:
           curl --fail --location --retry 3 --retry-delay 2 "$IMG_URL" -o recovery-original.img
           echo "$IMG_SHA256  recovery-original.img" | sha256sum --check
           test "$(stat --format=%s recovery-original.img)" -eq "$RECOVERY_PARTITION_SIZE"
-          python scripts/build.py --input recovery-original.img --output generated-device-tree --expected-sha256 "$IMG_SHA256"
-          python scripts/fix_device_tree.py --root generated-device-tree
+          "$RUNNER_TEMP/python-tools/bin/python" scripts/build.py --input recovery-original.img --output generated-device-tree --expected-sha256 "$IMG_SHA256"
+          "$RUNNER_TEMP/python-tools/bin/python" scripts/fix_device_tree.py --root generated-device-tree
 
       - name: Verify generated device tree
         run: |
@@ -137,10 +134,10 @@ jobs:
         run: |
           set -euo pipefail
           FOX_SOURCE="$GITHUB_WORKSPACE/fox-source"
-          python scripts/create_vietnamese.py --source "$FOX_SOURCE"
+          python3 scripts/create_vietnamese.py --source "$FOX_SOURCE"
           VN_RESOURCE="$FOX_SOURCE/gui/theme/extra-languages/languages/vn.xml"
           test -s "$VN_RESOURCE"
-          python - "$VN_RESOURCE" <<'PY'
+          python3 - "$VN_RESOURCE" <<'PY'
           import sys
           import xml.etree.ElementTree as ET
           from pathlib import Path
