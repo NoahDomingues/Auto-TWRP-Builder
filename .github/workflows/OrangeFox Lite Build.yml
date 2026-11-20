@@ -45,7 +45,7 @@ jobs:
       - name: Validate preparation scripts
         run: |
           set -euo pipefail
-          python -m py_compile scripts/build.py scripts/fix_device_tree.py
+          python -m py_compile scripts/build.py scripts/fix_device_tree.py scripts/create_vietnamese.py
           python -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Install build dependencies
@@ -98,7 +98,7 @@ jobs:
           test -s "$DEVICE_DIR/prebuilt/kernel"
           test -s "$DEVICE_DIR/prebuilt/dtb/mt6761.dtb"
           test -s "$DEVICE_DIR/prebuilt/recovery_dtbo.img"
-          grep -q 'TW_DEFAULT_LANGUAGE := vi' "$DEVICE_DIR/BoardConfig.mk"
+          grep -q 'TW_DEFAULT_LANGUAGE := vn' "$DEVICE_DIR/BoardConfig.mk"
           grep -q 'BOARD_INCLUDE_DTB_IN_BOOTIMG := true' "$DEVICE_DIR/BoardConfig.mk"
           grep -q 'BOARD_INCLUDE_RECOVERY_DTBO := true' "$DEVICE_DIR/BoardConfig.mk"
           grep -q '/dev/block/mmcblk0p16' "$DEVICE_DIR/recovery.fstab"
@@ -124,16 +124,24 @@ jobs:
           test -s "$FOX_SOURCE/build/envsetup.sh"
           df -h /
 
-      - name: Require Vietnamese translation
+      - name: Generate and validate Vietnamese locale
         run: |
           set -euo pipefail
           FOX_SOURCE="$GITHUB_WORKSPACE/fox-source"
-          VI_RESOURCE="$(find "$FOX_SOURCE" -type f -path '*/languages/vi.xml' -print -quit)"
-          if [ -z "$VI_RESOURCE" ]; then
-            echo "Vietnamese languages/vi.xml is missing. Refusing to build an English-only image as Vietnamese."
-            exit 1
-          fi
-          echo "Using Vietnamese resource: $VI_RESOURCE"
+          python scripts/create_vietnamese.py --source "$FOX_SOURCE"
+          VN_RESOURCE="$FOX_SOURCE/gui/theme/extra-languages/languages/vn.xml"
+          test -s "$VN_RESOURCE"
+          python - "$VN_RESOURCE" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          root = ET.parse(path).getroot()
+          assert root.tag == "language"
+          assert root.findtext("display") == "Vietnamese"
+          assert root.find("resources") is not None
+          print("Validated Vietnamese resource:", path)
+          PY
 
       - name: Add Apollo2 device tree
         run: |
