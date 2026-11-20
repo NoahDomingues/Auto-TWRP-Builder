@@ -171,7 +171,7 @@ def patch_board(board):
         "TARGET_USERIMAGES_USE_F2FS": "true",
         "TARGET_RECOVERY_FSTAB": "$(DEVICE_PATH)/recovery.fstab",
         "TW_THEME": "portrait_hdpi",
-        "TW_DEFAULT_LANGUAGE": "vi",
+        "TW_DEFAULT_LANGUAGE": "vn",
         "TW_EXTRA_LANGUAGES": "true",
         "TW_USE_TOOLBOX": "true",
         "TW_SCREEN_BLANK_ON_BOOT": "true",
@@ -316,7 +316,7 @@ def write_report(device_dir):
         "Boot image header: v2; page size: 2048 bytes",
         "Stock kernel, DTB, and recovery-DTBO payloads are size-checked.",
         "FBE decryption is deferred and not enabled or claimed.",
-        "Vietnamese is selected as the default UI language; the build must supply a valid vi.xml resource.",
+        "Vietnamese is selected as the default UI language; the build must supply a valid vn.xml resource.",
         "The Dark visual style remains a first-boot/UI Center target; no unverified theme-default variable is invented.",
         "OrangeFox FOX_* variables are exported from vendorsetup.sh.",
         "A/B mode is not enabled because the slot layout has not been conclusively established.",
@@ -344,7 +344,7 @@ def validate_tree(device_dir, board_path, product_path):
         "PLATFORM_SECURITY_PATCH": SECURITY_PATCH,
         "VENDOR_SECURITY_PATCH": SECURITY_PATCH,
         "BOARD_MAIN_SIZE": str(DYNAMIC_GROUP_SIZE),
-        "TW_DEFAULT_LANGUAGE": "vi",
+        "TW_DEFAULT_LANGUAGE": "vn",
         "TW_EXTRA_LANGUAGES": "true",
     }
     for key, value in required.items():
